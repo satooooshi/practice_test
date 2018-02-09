@@ -4,7 +4,8 @@
   "description": "A sample app for BDD with JS",
   "main": "index.js",
   "scripts": {
-    "test": "mocha -u bdd -R spec -t 500 --recursive"
+    "test": "mocha -u bdd -R spec -t 500 --recursive",
+    "watch": "mocha -u bdd -R spec -t 500 --recursive --watch"
   },
   "author": "Enrique Amodeo",
   "license": "MIT",
