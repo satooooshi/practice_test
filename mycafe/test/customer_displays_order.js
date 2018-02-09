@@ -4,6 +4,7 @@ var chai = require('chai'),
 expect = chai.expect,
 sinon = require('sinon'),
 newStorage = require('./support/storageDouble'),
+order = require('./support/examples/orders'),
 orderSystemWith = require('../lib/orders');
 
 chai.use(require("chai-as-promised"));
@@ -53,10 +54,7 @@ var Q = require('q');
        */
        //ver.3 use tenative DAO in storageDouble.js
         beforeEach(function () {
-            this.order = this.orderStorage.alreadyContains({
-              id: 'some empty order id',
-              data: []
-            });
+            this.order = this.orderStorage.alreadyContains(order.empty());
             this.result = this.orderSystem.display(this.order.id);
          });
        //
@@ -138,12 +136,10 @@ var Q = require('q');
            name: "Mocaccino",
            price: 2.30
          };
-      this.order = this.orderStorage.alreadyContains({
-           id: 'some non empty order id',
-           data: [
-             { beverage: this.expresso, quantity: 1},
-             { beverage: this.mocaccino, quantity: 2}
-         ]});
+      this.order = this.orderStorage.alreadyContains(order.withItems([
+               { beverage: 'expresso', quantity: 1},
+               { beverage: 'mocaccino', quantity: 2} ]
+             ));
       this.result = this.orderSystem.display(this.order.id);
     });
 
