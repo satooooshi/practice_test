@@ -1,189 +1,166 @@
 'use strict';
 
 var chai = require('chai'),
-expect = chai.expect,
-sinon = require('sinon'),
-newStorage = require('./support/storageDouble'),
-orderSystemWith = require('../lib/orders');
+    expect = chai.expect,
+    newStorage = require('./support/storageDouble'),
+    order = require('./support/examples/orders'),
+    errors = require('./support/examples/errors'),
+    orderSystemWith = require('../lib/orders');
 
+chai.use(require("sinon-chai"));
 chai.use(require("chai-as-promised"));
-var Q = require('q');
 
-   describe('Customer displays order', function () {
-     /*
-     beforeEach(function () {
-       this.orderDAO = {
-         byId: sinon.stub()
-       };
-       this.orderSystem = orderSystemWith(this.orderDAO);
-     });
-     */
-      beforeEach(function () {
-       this.orderStorage = newStorage();
-       this.orderSystem = orderSystemWith(this.orderStorage.dao());
-      });
-     context('Given that the order is empty', function () {
-       /*
-       //ver.1 simple system
-       beforeEach(function () {
-         //
-         //In Mocha, the this keyword will point to the same object throughout all the test
-         this.orderId = 'some empty order id';
-         //
-         //orderDAOにorderを保存すると仮定
-         //withArgsでsinon.stub()のargsを指定
-         //returnsで指定したargsのreturnを指定
-         this.orderDAO.byId.withArgs(this.orderId).returns([]);
-         //
-         //The important point here is that
-         //the tests force us to model the shape of the object we return as a response.
-         this.result = this.orderSystem.display(this.orderId);
-
-       });
-       */
-       /*
-       //ver.2 , apply async system
-       beforeEach(function () {
-         this.orderId = 'some empty order id';
-         this.orderDAO.byId
-         .withArgs(this.orderId)
-         .returns(promiseFor([]));
-         this.result = this.orderSystem.display(this.orderId);
-       });
-       */
-       //ver.3 use tenative DAO in storageDouble.js
-        beforeEach(function () {
-            this.order = this.orderStorage.alreadyContains({
-              id: 'some empty order id',
-              data: []
-            });
-            this.result = this.orderSystem.display(this.order.id);
-         });
-       //
-       //define a response that will be a simple JSON object
-       //with the items, totalPrice, and actions fields.
-       it('will show no order items', function () {
-         //
-         //relation between promise-mocha and promise-chai
-         //expect(this.result).to.have.property('items')
-         //.that.is.empty;
-         //===
-         //add the eventually chain and RETURN the resulting assertion
-         return expect(this.result).to.eventually.have.property('items')
-         .that.is.empty;
-       });
-       it('will show 0 as total price', function(){
-         //
-         //expect(this.result).to.have.property('totalPrice')
-         //.that.is.equal(0);
-         //===
-         return expect(this.result).to.eventually.have.property('totalPrice')
-         .that.is.equal(0);
-       });
-       it('will only be possible to add a beverage', function(){
-         return expect(this.result).to.eventually.have.property('actions')
-        .that.is.deep.equal([
-          {
-          action: 'append-beverage',
-               target: this.order.id,//target:'some empty order id'
-               parameters: {
-                 beverageRef: null,
-                 quantity: 0 }
-          }
-        ]);
-       });
-      });
-      context('Given that the order contains beverages', function() {
-        //
-        //We simply stored the setup data in the runtime context
-        //so that we can reference it from both the tests and the setup.
-        //
-        /*
-        beforeEach(function () {
-          this.orderId = 'some non empty order id';
-          this.expresso = {
-            id: "expresso id",
-            name: "Expresso",
-            price: 1.50
-          };
-          this.mocaccino = {
-            id: "mocaccino id",
-            name: "Mocaccino",
-            price: 2.30
-          };
-          this.orderItems = [
-            { beverage: this.expresso, quantity: 1},
-            { beverage: this.mocaccino, quantity: 2}
-          ];
-  //---------------------------------------------------------------------------
-          //
-          //store order information in the DAO.
-          this.orderDAO.byId
-           .withArgs(this.orderId)
-           //
-           //returns の Async ver.
-           .callsArgWithAsync(1, null, this.orderItems);
-  //---------------------------------------------------------------------------
-       this.result = this.orderSystem.display(this.orderId);
-       });
-       */
+describe('Customer displays order', function () {
+  beforeEach(function () {
+    this.orderStorage = newStorage();
+    this.messageStorage = newStorage();
+    this.orderSystem = orderSystemWith({
+      order: this.orderStorage.dao(),
+      message: this.messageStorage.dao()
+    });
+  });
+  context('Given that the order is empty', function () {
     beforeEach(function () {
-         this.expresso = {
-           id: "expresso id",
-           name: "Expresso",
-           price: 1.50
-         };
-         this.mocaccino = {
-           id: "mocaccino id",
-           name: "Mocaccino",
-           price: 2.30
-         };
-      this.order = this.orderStorage.alreadyContains({
-           id: 'some non empty order id',
-           data: [
-             { beverage: this.expresso, quantity: 1},
-             { beverage: this.mocaccino, quantity: 2}
-         ]});
+      this.order = this.orderStorage.alreadyContains(order.empty());
+      this.messages = this.messageStorage.alreadyContains({
+        id: this.order.id,
+        data: []
+      });
+      this.messageStorage.updateWillNotFail();
+
       this.result = this.orderSystem.display(this.order.id);
     });
+    it('will show no order items', function () {
+      return expect(this.result).to.eventually
+          .have.property('items').that.is.empty;
+    });
+    it('will show 0 as total price', function () {
+      return expect(this.result).to
+          .eventually.have.property('totalPrice').that.is.equal(0);
+    });
+    it('will only be possible to add a beverage', function () {
+      return expect(this.result).to.eventually
+          .have.property('actions')
+          .that.is.deep.equal([
+            {
+              action: 'append-beverage',
+              target: this.order.id,
+              parameters: {
+                beverageRef: null,
+                quantity: 0
+              }
+            }
+          ]);
+    });
+  });
 
-       //
-       //its below are all pending
-       //
-       it('will show one item per beverage', function(){
-         return expect(this.result).to.eventually.have.property('items')
-          .that.is.deep.equal(this.order.data);
-       });
-       it('will show the sum of the unit prices as total price', function(){
-         return expect(this.result).to.eventually.have.property('totalPrice')
-          .that.is.equal(6.10);
-       });
-       it('will be possible to place the order');
-       it('will be possible to add a beverage');
-       it('will be possible to remove a beverage');
-       it('will be possible to change the quantity of a beverage');
-     });
-     context('Given that the order has pending messages', function(){
-       it('will show the pending messages');
-       it('there will be no more pending messages');
-     });
-   });
+  function scenarioOrderContainsBeverages(testExample) {
+    context('Given that the order contains ' + testExample.title, function () {
+      beforeEach(function () {
+        this.order = this.orderStorage.alreadyContains(order.withItems(testExample.items));
+        this.messages = this.messageStorage.alreadyContains({
+          id: this.order.id,
+          data: []
+        });
+        this.messageStorage.updateWillNotFail();
+        this.orderActions = order.actionsFor(this.order);
 
+        this.result = this.orderSystem.display(this.order.id);
+      });
+      it('will show one item per beverage', function () {
+        return expect(this.result).to.eventually
+            .have.property('items')
+            .that.is.deep.equal(this.order.data);
+      });
+      it('will show the sum of the unit prices as total price', function () {
+        return expect(this.result).to
+            .eventually.have.property('totalPrice')
+            .that.is.equal(testExample.expectedTotalPrice);
+      });
+      it('will be possible to place the order', function () {
+        return expect(this.result).to.eventually
+            .have.property('actions')
+            .that.include(this.orderActions.place());
+      });
+      it('will be possible to add a beverage', function () {
+        return expect(this.result).to.eventually
+            .have.property('actions')
+            .that.include(this.orderActions.appendItem());
+      });
+      testExample.items.forEach(function (itemExample, i) {
+        it('will be possible to remove the ' + itemExample.beverage, function () {
+          return expect(this.result).to.eventually
+              .have.property('actions')
+              .that.include(this.orderActions.removeItem(i));
+        });
+        it('will be possible to change the quantity of ' + itemExample.beverage, function () {
+          return expect(this.result).to.eventually
+              .have.property('actions')
+              .that.include(this.orderActions.editItemQuantity(i));
+        });
+      });
+    });
+  }
 
-//<ROLE>_<ACTION>_<ENTITY>
-//where <ROLE> is the name of the kind of user that performs the actions,
-//<ACTION> is the user operation represented by this feature,
-//and <ENTITY> is the main information entity that is affected by the feature action
-//
+  [
+    {
+      title: '1 Expresso and 2 Mocaccino',
+      items: [
+        {beverage: 'expresso', quantity: 1},
+        {beverage: 'mocaccino', quantity: 2}
+      ],
+      expectedTotalPrice: 6.10
+    },
+    {
+      title: '1 Mocaccino, 2 expressos, and 1 capuccino',
+      items: [
+        {beverage: 'mocaccino', quantity: 1},
+        {beverage: 'expresso', quantity: 2},
+        {beverage: 'capuccino', quantity: 1}
+      ],
+      expectedTotalPrice: 7.30
+    }
+  ].forEach(scenarioOrderContainsBeverages);
 
+  function scenarioOrderHasPendingMessages(testExample) {
+    context('Given that the order has pending the following messages: ' + testExample.title, function () {
+      beforeEach(function () {
+        this.order = this.orderStorage.alreadyContains(order.empty());
+        this.messages = this.messageStorage.alreadyContains({
+          id: this.order.id,
+          data: testExample.pendingMessages
+        });
+        this.messageStorage.updateWillNotFail();
 
-function promiseFor(value) {
-     return Q.delay(1).then(function () {
-       return value;
-     });
-}
-   function failingPromiseWith(error) {
-     return Q.delay(1).then(function () {
-       throw error;
-     });
-}
+        this.result = this.orderSystem.display(this.order.id);
+
+        return this.result;
+      });
+      it('will show the pending messages', function () {
+        return expect(this.result).to.eventually
+            .have.property('messages')
+            .that.is.deep.equal(this.messages.data);
+      });
+      it('there will be no more pending messages', function () {
+        this.messageStorage.toExpectUpdate({
+          id: this.order.id,
+          data: []
+        });
+      });
+    });
+  }
+
+  [
+    {
+      title: 'bad quantity[-1]',
+      pendingMessages: [errors.badQuantity(-1)]
+    },
+    {
+      title: 'beverage does not exist, bad quantity[0]',
+      pendingMessages: [
+        errors.beverageDoesNotExist(),
+        errors.badQuantity(-1)
+      ]
+    }
+  ].forEach(scenarioOrderHasPendingMessages);
+});

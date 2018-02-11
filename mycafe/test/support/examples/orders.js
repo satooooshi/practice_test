@@ -1,9 +1,5 @@
 'use strict';
 
-//orders.js
-//actions factory
-
-
 var beverage = require('./beverages');
 
 var counter = 0;
@@ -16,24 +12,16 @@ function asOrderItem(itemExample) {
 }
 
 module.exports = {
-  //
-  //
-  //export array[] of functions
-  //
-  //
   empty: function () {
     return {
       id: "<empty order>",
       data: []
     };
   },
-  //connect item with self-generated idintifier
-  //IDをcustomer.jsの中で指定する手間をなくすため（IDはあまり関係ないから）
   withItems: function (itemExamples) {
     counter += 1;
     return {
       id: "<non empty order " + counter + ">",
-      //data is array[{},{},{},...] of objects{beverage:,quantity:,}
       data: itemExamples.map(asOrderItem)
     };
   },
